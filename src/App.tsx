@@ -3,6 +3,56 @@ import { ChatOpenAI } from '@langchain/openai'
 import { JsonOutputParser } from '@langchain/core/output_parsers'
 import { ChatPromptTemplate } from '@langchain/core/prompts'
 
+const elements = {
+  '@finshape/alfons-element-form': function Form({ children, name }) {
+    return (
+      <div>
+        <h1>{name}</h1>
+        <form>{children}</form>
+      </div>
+    )
+  },
+  '@finshape/alfons-element-input': function Input({ label }) {
+    return (
+      <div>
+        <label>{label}</label>
+        <input />
+      </div>
+    )
+  },
+  '@finshape/alfons-element-select': function Input({ label, values }) {
+    return (
+      <div>
+        <label>{label}</label>
+        <select>
+          {(values ?? []).map((value, i) => (
+            <option key={i}>{value}</option>
+          ))}
+        </select>
+      </div>
+    )
+  },
+}
+
+function Renderer({ node }) {
+  if (!node.type) return null
+
+  const Element = elements[node.type]
+
+  if (!Element) {
+    console.log('Unknown element for type', node.type)
+    return null
+  }
+
+  return (
+    <Element {...node.props}>
+      {(node.children ?? []).map((node, i) => (
+        <Renderer key={i} node={node} />
+      ))}
+    </Element>
+  )
+}
+
 function App() {
   const [query, setQuery] = useState('Generate me an address form with street, city and country inputs')
   const [output, setOutput] = useState<object>({})
@@ -42,6 +92,7 @@ function App() {
         <textarea value={query} rows={10} style={{ width: 500 }} onChange={(e) => setQuery(e.target.value)} />
         <button type="submit">Generate</button>
       </form>
+      <div>{output && output.elements && output.elements[0] && <Renderer node={output.elements[0]} />}</div>
       <pre>{JSON.stringify(output, null, 2)}</pre>
     </div>
   )
